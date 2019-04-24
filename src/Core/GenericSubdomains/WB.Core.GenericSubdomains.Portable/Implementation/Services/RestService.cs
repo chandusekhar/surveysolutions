@@ -250,7 +250,7 @@ namespace WB.Core.GenericSubdomains.Portable.Implementation.Services
             var restResponse = await this.ReceiveBytesWithProgressAsync(response,
                         transferProgress: transferProgress, token: token ?? default(CancellationToken)).ConfigureAwait(false);
 
-            var fileContent = this.GetDecompressedContentFromHttpResponseMessage(restResponse);
+            var fileContent = restResponse.Response;
 
             return new RestFile(content: fileContent, contentType: restResponse.RawContentType,
                 contentHash: restResponse.ETag, contentLength: restResponse.Length, fileName: restResponse.FileName,
