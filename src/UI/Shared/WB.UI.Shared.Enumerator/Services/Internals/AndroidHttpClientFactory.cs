@@ -38,7 +38,7 @@ namespace WB.UI.Shared.Enumerator.Services.Internals
                     Timeout = restServiceSettings.Timeout,
                     EnableUntrustedCertificates = restServiceSettings.AcceptUnsignedSslCertificate,
                     DisableCaching = true,
-                    AutomaticDecompression = DecompressionMethods.None,
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                     AllowAutoRedirect = true,
                     Proxy = WebRequest.GetSystemWebProxy()
                 };

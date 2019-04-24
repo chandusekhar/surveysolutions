@@ -386,7 +386,7 @@ namespace WB.Core.GenericSubdomains.Portable.Implementation.Services
 
             try
             {
-                var responseContent = GetDecompressedContentFromHttpResponseMessage(restResponse);
+                var responseContent = restResponse.Response;
                 // Debug.WriteLine($"JSON: {System.Text.Encoding.UTF8.GetString(responseContent)}");
                 return this.synchronizationSerializer.Deserialize<T>(responseContent);
             }
@@ -396,23 +396,6 @@ namespace WB.Core.GenericSubdomains.Portable.Implementation.Services
             }
         }
 
-
-        private byte[] GetDecompressedContentFromHttpResponseMessage(RestResponse restResponse)
-        {
-            var responseContent = restResponse.Response;
-
-            switch (restResponse.ContentCompressionType)
-            {
-                case RestContentCompressionType.GZip:
-                    responseContent = this.stringCompressor.DecompressGZip(responseContent);
-                    break;
-                case RestContentCompressionType.Deflate:
-                    responseContent = this.stringCompressor.DecompressDeflate(responseContent);
-                    break;
-            }
-
-            return responseContent;
-        }
 
         public bool IsValidHostAddress(string url)
             => Uri.TryCreate(url, UriKind.Absolute, out var uriResult) &&
