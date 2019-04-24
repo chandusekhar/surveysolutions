@@ -265,32 +265,12 @@ namespace WB.Core.GenericSubdomains.Portable.Implementation.Services
             
             var contentLength = response.Content.Headers.ContentLength;
 
-            var contentCompressionType = this.GetContentCompressionType(response.Content.Headers);
-
             var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-
-            switch (contentCompressionType)
+            return new RestStreamResult
             {
-                case RestContentCompressionType.GZip:
-                    return new RestStreamResult
-                    {
-                        Stream = this.stringCompressor.GetDecompressingGZipStream(responseStream),
-                        ContentLength = contentLength
-                    };
-
-                case RestContentCompressionType.Deflate:
-                    return new RestStreamResult
-                    {
-                        Stream = this.stringCompressor.GetDecompressingDeflateStream(responseStream),
-                        ContentLength = contentLength
-                    };
-                default:
-                    return new RestStreamResult
-                    {
-                        Stream = responseStream,
-                        ContentLength = contentLength
-                    };
-            }
+                Stream = responseStream,
+                ContentLength = contentLength
+            };
         }
 
         public async Task SendStreamAsync(Stream streamData, string url, RestCredentials credentials,
@@ -340,7 +320,6 @@ namespace WB.Core.GenericSubdomains.Portable.Implementation.Services
             var restResponse = new RestResponse
             {
                 ContentType = this.GetContentType(responseMessage.Content.Headers.ContentType?.MediaType),
-                ContentCompressionType = this.GetContentCompressionType(responseMessage.Content.Headers),
                 RawContentType = responseMessage.Content?.Headers?.ContentType?.MediaType,
                 Length = responseMessage.Content?.Headers?.ContentLength,
                 ETag = responseMessage.Headers?.ETag?.Tag,
@@ -362,21 +341,6 @@ namespace WB.Core.GenericSubdomains.Portable.Implementation.Services
                 return RestContentType.Json;
 
             return RestContentType.Unknown;
-        }
-
-        private RestContentCompressionType GetContentCompressionType(HttpContentHeaders headers)
-        {
-            headers.TryGetValues("Content-Encoding", out var acceptedEncodings);
-
-            if (acceptedEncodings == null) return RestContentCompressionType.None;
-
-            if (acceptedEncodings.Contains("gzip"))
-                return RestContentCompressionType.GZip;
-
-            if (acceptedEncodings.Contains("deflate"))
-                return RestContentCompressionType.Deflate;
-
-            return RestContentCompressionType.None;
         }
 
         private T GetDecompressedJsonFromHttpResponseMessage<T>(RestResponse restResponse)
