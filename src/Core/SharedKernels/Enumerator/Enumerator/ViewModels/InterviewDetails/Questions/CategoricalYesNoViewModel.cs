@@ -60,7 +60,7 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
             => answeredOptions.Where(x => x.Yes).ToArray();
 
         protected override AnsweredYesNoOption[] GetAnsweredOptionsFromInterview(IStatefulInterview interview)
-        => interview.GetYesNoQuestion(this.Identity).GetAnswer()?.ToAnsweredYesNoOptions().ToArray();
+        => interview.GetYesNoQuestion(this.Identity)?.GetAnswer()?.ToAnsweredYesNoOptions().ToArray();
 
         protected override void SetAnswerToOptionViewModel(CategoricalMultiOptionViewModel<decimal> optionViewModel, AnsweredYesNoOption[] answers)
         {

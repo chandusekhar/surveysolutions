@@ -45,6 +45,9 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
 
         protected override IEnumerable<CategoricalMultiOptionViewModel<int>> GetOptions(IStatefulInterview interview)
         {
+            if (this.filteredOptionsViewModel == null)
+                yield break;
+
             foreach (var categoricalOption in this.filteredOptionsViewModel.GetOptions())
             {
                 var vm = new CategoricalMultiOptionViewModel(this.userInteraction);
@@ -80,7 +83,7 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
             new AnswerMultipleOptionsQuestionCommand(interviewId, userId, this.Identity.Id, this.Identity.RosterVector, this.selectedOptionsToSave);
         
         protected override int[] GetAnsweredOptionsFromInterview(IStatefulInterview interview) 
-            => interview.GetMultiOptionQuestion(this.Identity).GetAnswer()?.CheckedValues?.ToArray();
+            => interview.GetMultiOptionQuestion(this.Identity)?.GetAnswer()?.CheckedValues?.ToArray();
         
         public virtual void Handle(MultipleOptionsQuestionAnswered @event)
         {

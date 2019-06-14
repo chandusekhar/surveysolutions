@@ -62,7 +62,12 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
 
         protected override IEnumerable<CategoricalMultiOptionViewModel<RosterVector>> GetOptions(IStatefulInterview interview)
         {
-            foreach (var answeredOption in interview.GetLinkedMultiOptionQuestion(this.Identity).Options)
+            var question = interview.GetLinkedMultiOptionQuestion(this.Identity);
+
+            if (question == null)
+                yield break;
+            
+            foreach (var answeredOption in question.Options)
             {
                 var vm = new CategoricalMultiOptionViewModel<RosterVector>();
                 base.InitViewModel(interview.GetLinkedOptionTitle(this.Identity, answeredOption), answeredOption, interview, vm);

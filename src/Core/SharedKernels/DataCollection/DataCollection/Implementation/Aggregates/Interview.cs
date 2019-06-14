@@ -2448,13 +2448,13 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Aggregates
                 Identity.Create(answerDto.Id, answerDto.QuestionRosterVector));
 
         public InterviewTreeMultiLinkedToRosterQuestion GetLinkedMultiOptionQuestion(Identity identity) =>
-            this.Tree.GetQuestion(identity).GetAsInterviewTreeMultiLinkedToRosterQuestion();
+            this.Tree.GetQuestion(identity)?.GetAsInterviewTreeMultiLinkedToRosterQuestion();
 
         public InterviewTreeMultiOptionLinkedToListQuestion GetMultiOptionLinkedToListQuestion(Identity identity) => 
-            this.Tree.GetQuestion(identity).GetAsInterviewTreeMultiOptionLinkedToListQuestion();
+            this.Tree.GetQuestion(identity)?.GetAsInterviewTreeMultiOptionLinkedToListQuestion();
 
         public InterviewTreeSingleLinkedToRosterQuestion GetLinkedSingleOptionQuestion(Identity identity) =>
-            this.Tree.GetQuestion(identity).GetAsInterviewTreeSingleLinkedToRosterQuestion();
+            this.Tree.GetQuestion(identity)?.GetAsInterviewTreeSingleLinkedToRosterQuestion();
 
         public string GetLinkedOptionTitle(Identity linkedQuestionIdentity, RosterVector option)
         {

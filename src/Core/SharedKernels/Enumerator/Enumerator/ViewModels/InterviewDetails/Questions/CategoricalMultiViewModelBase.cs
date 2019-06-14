@@ -162,9 +162,13 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
         {
             var interview = this.interviewRepository.Get(this.interviewId.FormatGuid());
 
-            await this.mainThreadDispatcher.ExecuteOnMainThreadAsync(
-                () => 
-                    this.Options.ReplaceWith(this.GetOptions(interview).ToList()));
+            await this.mainThreadDispatcher.ExecuteOnMainThreadAsync(() =>
+            {
+                var options = this.GetOptions(interview);
+
+                if (options != null)
+                    this.Options.ReplaceWith(options);
+            });
 
             this.UpdateOptionsFromInterviewInMainThread();
         }

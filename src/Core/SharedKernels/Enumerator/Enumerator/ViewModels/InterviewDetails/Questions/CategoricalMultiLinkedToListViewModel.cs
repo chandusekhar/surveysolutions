@@ -58,10 +58,15 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
         {
             var listQuestion = interview.FindQuestionInQuestionBranch(this.linkedToQuestionId, this.Identity);
 
-            if (listQuestion == null || listQuestion.IsDisabled() || listQuestion.GetAsInterviewTreeTextListQuestion().GetAnswer()?.Rows == null)
+            if (listQuestion == null || listQuestion.IsDisabled())
                 yield break;
-            
-            foreach (var textListAnswerRow in listQuestion.GetAsInterviewTreeTextListQuestion().GetAnswer()?.Rows)
+
+            var rows = listQuestion.GetAsInterviewTreeTextListQuestion()?.GetAnswer()?.Rows;
+
+            if(rows == null)
+                yield break;
+
+            foreach (var textListAnswerRow in rows)
             {
                 var vm = new CategoricalMultiOptionViewModel<int>();
                 base.InitViewModel(textListAnswerRow.Text, textListAnswerRow.Value, interview, vm);
