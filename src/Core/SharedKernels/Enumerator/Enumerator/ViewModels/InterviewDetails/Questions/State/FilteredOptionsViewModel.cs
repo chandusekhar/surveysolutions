@@ -108,11 +108,8 @@ namespace WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions
 
         private void AnswerNotifierOnQuestionAnswered(object sender, EventArgs eventArgs)
         {
-            var newOptions = interview.GetTopFilteredOptionsForQuestion(questionIdentity, ParentValue, Filter, Count)
-                                .ToList();
-
-            var listOfNewOptions = newOptions.ToList();
-
+            var listOfNewOptions = interview.GetTopFilteredOptionsForQuestion(questionIdentity, ParentValue, Filter, Count).ToList();
+            
             var existingOptions = this.Options;
             if (existingOptions == null || !listOfNewOptions.SequenceEqual(existingOptions, new CategoricalOptionEqualityComparer()))
             {

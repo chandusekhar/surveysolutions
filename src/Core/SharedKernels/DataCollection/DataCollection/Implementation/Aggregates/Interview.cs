@@ -737,6 +737,9 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Aggregates
 
             var question = this.tree.GetQuestion(questionIdentity);
 
+            if (question == null)
+                return new List<CategoricalOption>();
+
             var nearestRoster = question.Parents.OfType<InterviewTreeRoster>().LastOrDefault()?.Identity ??
                                 new Identity(this.QuestionnaireIdentity.QuestionnaireId, RosterVector.Empty);
 
