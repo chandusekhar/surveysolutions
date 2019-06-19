@@ -120,23 +120,9 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
 
         public FileObject Store(string key, Stream inputStream, string contentType, IProgress<int> progress = null)
         {
+            var uploadRequest = CreateTransferRequest(key, inputStream, contentType, progress);
             try
             {
-                var uploadRequest = new TransferUtilityUploadRequest
-                {
-                    BucketName = s3Settings.BucketName,
-                    Key = GetKey(key),
-                    ContentType = contentType,
-                    AutoCloseStream = false,
-                    AutoResetStreamPosition = false,
-                    InputStream = inputStream
-                };
-
-                if (progress != null)
-                {
-                    uploadRequest.UploadProgressEvent += (sender, args) => { progress.Report(args.PercentDone); };
-                }
-
                 transferUtility.Upload(uploadRequest);
 
                 return new FileObject
@@ -155,23 +141,10 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
 
         public async Task<FileObject> StoreAsync(string key, Stream inputStream, string contentType, IProgress<int> progress = null)
         {
+            var uploadRequest = CreateTransferRequest(key, inputStream, contentType, progress);
+
             try
             {
-                var uploadRequest = new TransferUtilityUploadRequest
-                {
-                    BucketName = s3Settings.BucketName,
-                    Key = GetKey(key),
-                    ContentType = contentType,
-                    AutoCloseStream = false,
-                    AutoResetStreamPosition = false,
-                    InputStream = inputStream
-                };
-
-                if (progress != null)
-                {
-                    uploadRequest.UploadProgressEvent += (sender, args) => { progress.Report(args.PercentDone); };
-                }
-
                 await transferUtility.UploadAsync(uploadRequest);
 
                 return new FileObject
@@ -186,6 +159,27 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
                 LogError($"Unable to store object in S3. Path: {key}", e);
                 throw;
             }
+        }
+
+        private TransferUtilityUploadRequest CreateTransferRequest(string key, Stream inputStream, string contentType,
+            IProgress<int> progress)
+        {
+            var uploadRequest = new TransferUtilityUploadRequest
+            {
+                BucketName = s3Settings.BucketName,
+                Key = GetKey(key),
+                ContentType = contentType,
+                AutoCloseStream = false,
+                AutoResetStreamPosition = false,
+                InputStream = inputStream
+            };
+
+            if (progress != null)
+            {
+                uploadRequest.UploadProgressEvent += (sender, args) => { progress.Report(args.PercentDone); };
+            }
+
+            return uploadRequest;
         }
 
         public FileObject GetObjectMetadata(string key)
