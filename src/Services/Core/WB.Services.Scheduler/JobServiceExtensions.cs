@@ -37,12 +37,14 @@ namespace WB.Services.Scheduler
 
             services.AddTransient<IHostedSchedulerService, CleanupService>();
             services.AddTransient<IHostedSchedulerService, WorkCancellationTrackService>();
-            services.AddTransient<IHostedSchedulerService, JobProgressReportService>();
+            services.AddSingleton<IJobProgressReporter, JobProgressReporter>();
+            services.AddHostedService(sl 
+                => sl.GetService<IJobProgressReporter>() as JobProgressReporter);
+
             services.AddTransient<IHostedSchedulerService, JobWorkersManageService>();
 
             services.AddSingleton<IJobCancellationNotifier, JobCancellationNotifier>();
             services.AddTransient<IJobService, JobService>();
-            services.AddSingleton<IJobProgressReporter, JobProgressReporter>();
             services.AddTransient<IJobWorker, JobWorker>();
             services.AddTransient<IJobExecutor, JobExecutor>();
 
