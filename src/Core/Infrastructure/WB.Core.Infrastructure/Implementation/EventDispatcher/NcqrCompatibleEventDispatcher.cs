@@ -76,16 +76,13 @@ namespace WB.Core.Infrastructure.Implementation.EventDispatcher
                         var eventHandlerException = new EventHandlerException(eventHandlerType: eventHandlerType,
                             eventType: events.First().GetType(), isCritical: !shouldIgnoreException,
                             innerException: exception);
+                    
+                        this.logger.Error(
+                            $"Failed to handle {eventHandlerException.EventType.Name} in " +
+                            $"{eventHandlerException.EventHandlerType} by event source '{firstEventSourceId}'.",
+                            eventHandlerException);
 
-                        if (shouldIgnoreException)
-                        {
-                            this.logger.Error(
-                                $"Failed to handle {eventHandlerException.EventType.Name} in " +
-                                $"{eventHandlerException.EventHandlerType} by event source '{firstEventSourceId}'.",
-                                eventHandlerException);
-
-                        }
-                        else
+                        if (!shouldIgnoreException)
                         {
                             errorsDuringHandling.Add(eventHandlerException);
                         }
