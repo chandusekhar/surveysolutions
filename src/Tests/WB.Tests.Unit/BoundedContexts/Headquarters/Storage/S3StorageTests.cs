@@ -40,7 +40,7 @@ namespace WB.Tests.Unit.BoundedContexts.Headquarters.Storage
                 Options.Create(new HeadquartersConfig
                 {
                     TenantName = "fiji"
-                }), Create.Service.WorkspaceContextAccessor()
+                })
             );
 
             bucketInfo = this.settings.GetAmazonS3BucketInfo();
@@ -175,7 +175,7 @@ namespace WB.Tests.Unit.BoundedContexts.Headquarters.Storage
                 Options.Create(new HeadquartersConfig
                 {
                     TenantName = "fiji"
-                }), Create.Service.WorkspaceContextAccessor()
+                })
             ).GetAmazonS3BucketInfo();
 
             Assert.That(bucket.BucketName, Is.EqualTo("another.bucket.name"));
