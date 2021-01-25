@@ -48,6 +48,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
                 using var response = await client.GetObjectAsync(getObject).ConfigureAwait(false);
                 await using var ms = new MemoryStream();
                 await response.ResponseStream.CopyToAsync(ms);
+                log.Trace($"Got object from S3. [{getObject.Key}] {BucketInfo.PathTo(key)}");
                 return ms.ToArray();
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -103,7 +104,6 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
 
         public string GetDirectLink(string key, TimeSpan expiration)
         {
-
             return client.GetPreSignedURL(new GetPreSignedUrlRequest
             {
                 Protocol = Protocol.HTTPS,
@@ -133,6 +133,8 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
                 }
 
                 transferUtility.Upload(uploadRequest);
+
+                log.Trace($"Stored object to S3. [{uploadRequest.Key}] {BucketInfo.PathTo(key)}");
 
                 return new FileObject
                 {
@@ -171,6 +173,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
                 }
 
                 await transferUtility.UploadAsync(uploadRequest).ConfigureAwait(false);
+                log.Trace($"Stored object to S3. [{uploadRequest.Key}] {BucketInfo.PathTo(key)}");
 
                 return new FileObject
                 {
@@ -197,6 +200,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
             try
             {
                 await client.DeleteObjectAsync(BucketInfo.BucketName, BucketInfo.PathTo(path)).ConfigureAwait(false);
+                log.Trace($"Deleted object from S3. [{ BucketInfo.PathTo(path)}] { BucketInfo.PathTo(path)}");
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
@@ -223,6 +227,8 @@ namespace WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3
                 if (deleteRequest.Objects.Any())
                 {
                     await client.DeleteObjectsAsync(deleteRequest).ConfigureAwait(false);
+                    var objects = string.Join(", ", deleteRequest.Objects.Select(kl => kl.Key));
+                    log.Trace($"Deleted object from S3. [{objects}]");
                 }
             }
             catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)

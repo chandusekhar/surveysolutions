@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using Microsoft.Extensions.Configuration;
@@ -7,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using WB.Core.BoundedContexts.Headquarters.Implementation.Repositories;
 using WB.Core.BoundedContexts.Headquarters.Storage.AmazonS3;
-using WB.Core.GenericSubdomains.Portable.ServiceLocation;
 using WB.Core.Infrastructure.Modularity;
 using WB.Core.SharedKernels.DataCollection;
 using WB.Core.SharedKernels.DataCollection.Implementation.Repositories;

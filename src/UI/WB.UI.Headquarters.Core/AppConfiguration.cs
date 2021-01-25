@@ -48,7 +48,7 @@ namespace WB.UI.Headquarters
                 c.TempData = c.TempData.Replace("~", Directory.GetCurrentDirectory());
 
                 var workspace = workspaceAccessor.CurrentWorkspace();
-                if (workspace != null && workspace.Name == WorkspaceConstants.DefaultWorkspaceName)
+                if (workspace != null && workspace.Name != WorkspaceConstants.DefaultWorkspaceName)
                 {
                     c.AppData = Path.Combine(c.AppData, workspace.Name);
                     c.TempData = Path.Combine(c.TempData, workspace.Name);
