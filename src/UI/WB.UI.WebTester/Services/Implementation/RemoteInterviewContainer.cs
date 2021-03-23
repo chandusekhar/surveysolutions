@@ -44,7 +44,8 @@ namespace WB.UI.WebTester.Services.Implementation
             var questionnaire =
                 questionnaireStorage.GetQuestionnaire(
                     identity, null);
-            var prototype =  new InterviewExpressionStorageProvider(questionnaireAssemblyAccessor,
+            var prototype =  new InterviewExpressionStatePrototypeProvider(questionnaireAssemblyAccessor,
+                new InterviewExpressionStateUpgrader(),
                 this.scope.Resolve<ILoggerProvider>());
 
             if (questionnaire == null)

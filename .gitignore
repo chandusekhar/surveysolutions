@@ -139,4 +139,3 @@ src/UI/WB.UI.Designer/wwwroot
 /.tmp
 artifacts
 /.tool
-appsettings.*.ini

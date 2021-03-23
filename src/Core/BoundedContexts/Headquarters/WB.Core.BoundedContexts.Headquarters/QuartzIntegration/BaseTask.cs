@@ -1,5 +1,5 @@
-﻿#nullable enable
-using System;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Quartz;
 
@@ -7,17 +7,16 @@ namespace WB.Core.BoundedContexts.Headquarters.QuartzIntegration
 {
     public abstract class BaseTask
     {
-        public const string TaskDataKey = "_data_";
-        protected readonly ISchedulerFactory schedulerFactory;
+        protected readonly IScheduler scheduler;
 
         private readonly Type jobType;
 
         protected readonly JobKey jobKey;
         protected readonly TriggerKey triggerKey;
 
-        protected BaseTask(ISchedulerFactory schedulerFactory, string groupName, Type jobType)
+        protected BaseTask(IScheduler scheduler, string groupName, Type jobType)
         {
-            this.schedulerFactory = schedulerFactory ?? throw new ArgumentNullException(nameof(schedulerFactory));
+            this.scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
 
             this.jobKey = new JobKey($"{groupName} job", groupName);
             this.jobType = jobType;
@@ -25,7 +24,8 @@ namespace WB.Core.BoundedContexts.Headquarters.QuartzIntegration
             this.triggerKey = new TriggerKey($"{groupName} trigger", groupName);
         }
 
-        private static Random rnd = new ();
+        public virtual bool IsJobRunning() =>
+            this.scheduler.GetCurrentlyExecutingJobs().Result.FirstOrDefault(x => Equals(x.JobDetail.Key, jobKey)) != null;
 
         public virtual async Task Schedule(int repeatIntervalInSeconds)
         {
@@ -33,19 +33,18 @@ namespace WB.Core.BoundedContexts.Headquarters.QuartzIntegration
                 .WithIdentity(jobKey)
                 .StoreDurably()
                 .Build();
-            var scheduler = await this.schedulerFactory.GetScheduler();
 
-            await scheduler.AddJob(job, true);
+            await this.scheduler.AddJob(job, true);
 
             var trigger = TriggerBuilder.Create()
                 .WithIdentity(triggerKey)
                 .ForJob(jobKey)
-                .StartAt(DateBuilder.FutureDate(rnd.Next(2,15), IntervalUnit.Second))
+                .StartAt(DateBuilder.FutureDate(2, IntervalUnit.Second))
                 .WithSimpleSchedule(x => x.WithIntervalInSeconds(repeatIntervalInSeconds).RepeatForever())
                 .Build();
 
-            if (!await scheduler.CheckExists(triggerKey))
-                await scheduler.ScheduleJob(trigger);
+            if (!await this.scheduler.CheckExists(triggerKey))
+                await this.scheduler.ScheduleJob(trigger);
         }
 
         public virtual async Task ScheduleRunAsync(int startAtInSeconds = 1)
@@ -54,10 +53,8 @@ namespace WB.Core.BoundedContexts.Headquarters.QuartzIntegration
                 .WithIdentity(jobKey)
                 .StoreDurably()
                 .Build();
-            
-            var scheduler = await this.schedulerFactory.GetScheduler();
 
-            await scheduler.AddJob(job, true);
+            await this.scheduler.AddJob(job, true);
 
             var trigger = TriggerBuilder.Create()
                 .WithDescription(jobKey.ToString())
@@ -65,7 +62,7 @@ namespace WB.Core.BoundedContexts.Headquarters.QuartzIntegration
                 .StartAt(DateBuilder.FutureDate(startAtInSeconds, IntervalUnit.Second))
                 .Build();
 
-            await scheduler.ScheduleJob(trigger);
+            await this.scheduler.ScheduleJob(trigger);
         }
     }
 }

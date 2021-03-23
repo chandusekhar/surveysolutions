@@ -90,5 +90,6 @@ namespace WB.Tests.Integration.InterviewTests.Rosters
         private static Guid rosterGroupId;
         private static Guid nestedRosterGroupId;
         private static InterviewSynchronizationDto interviewSynchronizationDto;
+        private static Mock<ILatestInterviewExpressionState> interviewExpressionStateMock;
     }
 }

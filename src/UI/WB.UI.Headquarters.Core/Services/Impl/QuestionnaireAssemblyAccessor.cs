@@ -35,6 +35,7 @@ namespace WB.UI.Headquarters.Services.Impl
                 this.AssemblyContent = assemblyContent;
                 assembly = new Lazy<Assembly?>(() =>
                 {
+                    var state = typeof(Core.SharedKernels.DataCollection.IInterviewExpressionState).Assembly;
                     var ass = Assembly.Load(assemblyContent);
                     var ctx = AssemblyLoadContext.GetLoadContext(ass);
                     if (ctx == null)
@@ -45,7 +46,9 @@ namespace WB.UI.Headquarters.Services.Impl
                     ctx.Resolving += (context, name) =>
                     {
                         // redirect binding to 
-                        return context.Assemblies.FirstOrDefault(a => a.FullName == name.FullName);
+                        return name.Name == state.GetName().Name 
+                            ? state 
+                            : context.Assemblies.FirstOrDefault(a => a.FullName == name.FullName);
                     };
 
                     return ass;

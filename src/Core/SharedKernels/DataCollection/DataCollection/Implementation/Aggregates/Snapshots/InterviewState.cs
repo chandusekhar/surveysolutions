@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using WB.Core.GenericSubdomains.Portable.CustomCollections;
+using WB.Core.SharedKernels.DataCollection.Utils;
+using WB.Core.SharedKernels.DataCollection.V2;
 using WB.Core.SharedKernels.DataCollection.ValueObjects.Interview;
 
 namespace WB.Core.SharedKernels.DataCollection.Implementation.Aggregates.Snapshots
@@ -17,7 +19,8 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Aggregates.Snapsho
             Dictionary<string, Tuple<Guid, decimal[], decimal[][]>> linkedMultipleOptionsAnswers, Dictionary<string, Tuple<decimal, string>[]> textListAnswers,
             HashSet<string> answeredQuestions,List<AnswerComment> answerComments,
             HashSet<string> disabledGroups, HashSet<string> disabledQuestions, Dictionary<string, ConcurrentHashSet<decimal>> rosterGroupInstanceIds,
-            HashSet<string> validAnsweredQuestions, HashSet<string> invalidAnsweredQuestions, bool wasCompleted, Guid interviewewerId)
+            HashSet<string> validAnsweredQuestions, HashSet<string> invalidAnsweredQuestions, bool wasCompleted,
+            IInterviewExpressionStateV2 expressionProcessorState, Guid interviewewerId)
         {
             this.QuestionnaireId = questionnaireId;
             this.QuestionnaireVersion = questionnaireVersion;
@@ -34,6 +37,7 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Aggregates.Snapsho
             this.ValidAnsweredQuestions = validAnsweredQuestions;
             this.InvalidAnsweredQuestions = invalidAnsweredQuestions;
             this.WasCompleted = wasCompleted;
+            this.ExpressionProcessorState = expressionProcessorState;
             InterviewewerId = interviewewerId;
         }
 
@@ -54,5 +58,6 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Aggregates.Snapsho
         public bool WasCompleted { get; private set; }
         public bool WasHardDeleted { get; private set; }
         public Dictionary<string, Tuple<decimal, string>[]> TextListAnswers { get; set; }
+        public IInterviewExpressionStateV2 ExpressionProcessorState { get; set; }
     }
 }

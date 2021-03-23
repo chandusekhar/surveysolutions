@@ -4,6 +4,7 @@ using Esri.ArcGISRuntime;
 using Plugin.Permissions;
 using Plugin.Permissions.Abstractions;
 using WB.Core.SharedKernels.Enumerator.Services;
+using WB.Core.SharedKernels.Enumerator.Utils;
 using WB.UI.Shared.Enumerator.Services;
 using WB.UI.Shared.Extensions.CustomServices.AreaEditor;
 using WB.UI.Shared.Extensions.CustomServices.MapDashboard;
@@ -40,6 +41,11 @@ namespace WB.UI.Shared.Extensions.CustomServices
             this.viewModelNavigationService = viewModelNavigationService;
         }
 
+        public static void RegisterLicense()
+        {
+            ArcGISRuntimeEnvironment.SetLicense("runtimeadvanced,1000,rud000017554,none,***REMOVED***");
+        }
+
         public async Task<AreaEditResult> EditAreaAsync(WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails.Questions.Area area, WB.Core.SharedKernels.Questionnaire.Documents.GeometryType? geometryType)
         {
             await this.permissions.AssureHasPermissionOrThrow<LocationPermission>().ConfigureAwait(false);
@@ -54,11 +60,6 @@ namespace WB.UI.Shared.Extensions.CustomServices
             await this.permissions.AssureHasPermissionOrThrow<StoragePermission>().ConfigureAwait(false);
 
             await this.viewModelNavigationService.NavigateToAsync<MapDashboardViewModel>().ConfigureAwait(false);
-        }
-
-        public void Init(string key)
-        {
-            ArcGISRuntimeEnvironment.SetLicense(key);
         }
 
         public bool DoesSupportMaps => true;

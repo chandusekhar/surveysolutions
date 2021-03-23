@@ -43,6 +43,9 @@ namespace WB.UI.Tester.ServiceLocation
 
         public Task Init(IServiceLocator serviceLocator, UnderConstructionInfo info)
         {
+#if !EXCLUDEEXTENSIONS
+            WB.UI.Shared.Extensions.CustomServices.MapInteractionService.RegisterLicense();
+#endif
             return Task.CompletedTask;
         }
     }

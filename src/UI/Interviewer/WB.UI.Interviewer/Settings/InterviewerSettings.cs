@@ -36,7 +36,8 @@ namespace WB.UI.Interviewer.Settings
             this.interviewViewRepository = interviewViewRepository;
             this.questionnaireViewRepository = questionnaireViewRepository;
         }
-        
+
+
         private string GetUserInformation()
         {
             var currentStoredUser = this.principal.CurrentUserIdentity;

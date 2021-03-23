@@ -1781,7 +1781,7 @@ namespace WB.Tests.Abc.TestFactories
             int? quantity = null,
             Guid? assigneeSupervisorId = null,
             string responsibleName = null,
-            IEnumerable<InterviewSummary> interviewSummary = null,
+            ISet<InterviewSummary> interviewSummary = null,
             string questionnaireTitle = null, 
             DateTime? updatedAt = null,
             Guid? responsibleId = null,
@@ -1835,7 +1835,7 @@ namespace WB.Tests.Abc.TestFactories
             }
 
             if(interviewSummary != null)
-                result.AsDynamic().InterviewSummaries =  new HashSet<InterviewSummary>(interviewSummary);
+                result.AsDynamic().InterviewSummaries = interviewSummary;
             if (responsibleId.HasValue)
             {
                 result.ResponsibleId = responsibleId.Value;

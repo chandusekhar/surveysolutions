@@ -30,6 +30,7 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport
         private readonly IUnitOfWork sessionProvider;
         private readonly IPlainStorageAccessor<AssignmentsImportProcess> importAssignmentsProcessRepository;
         private readonly IPlainStorageAccessor<AssignmentToImport> importAssignmentsRepository;
+        private readonly IInterviewCreatorFromAssignment interviewCreatorFromAssignment;
         private readonly IAssignmentsImportFileConverter assignmentsImportFileConverter;
         private readonly IAssignmentFactory assignmentFactory;
         private readonly IInvitationService invitationService;
@@ -40,6 +41,7 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport
             IUnitOfWork sessionProvider,
             IPlainStorageAccessor<AssignmentsImportProcess> importAssignmentsProcessRepository,
             IPlainStorageAccessor<AssignmentToImport> importAssignmentsRepository,
+            IInterviewCreatorFromAssignment interviewCreatorFromAssignment,
             IAssignmentsImportFileConverter assignmentsImportFileConverter,
             IAssignmentFactory assignmentFactory,
             IInvitationService invitationService, 
@@ -50,6 +52,7 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport
             this.sessionProvider = sessionProvider;
             this.importAssignmentsProcessRepository = importAssignmentsProcessRepository;
             this.importAssignmentsRepository = importAssignmentsRepository;
+            this.interviewCreatorFromAssignment = interviewCreatorFromAssignment;
             this.assignmentsImportFileConverter = assignmentsImportFileConverter;
             this.assignmentFactory = assignmentFactory;
             this.invitationService = invitationService;
@@ -132,7 +135,7 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport
 
             var protectedVariables = protectedVariablesFile?
                 .Rows?
-                .Where(x => x.Cells.Length > 0)
+                .Where(x => x.Cells.Length > 0)?
                 .Select(x => ((PreloadingValue) x.Cells[0]).Value)?
                 .ToList();
 
@@ -252,6 +255,9 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport
                 assignmentToImport.Comments);
 
             this.invitationService.CreateInvitationForWebInterview(assignment);
+
+            this.interviewCreatorFromAssignment.CreateInterviewIfQuestionnaireIsOld(responsibleId,
+                questionnaireIdentity, assignment.Id, assignmentToImport.Answers);
 
             return assignment.Id;
         }

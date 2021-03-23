@@ -10,7 +10,6 @@ using WB.Core.BoundedContexts.Headquarters.AssignmentImport;
 using WB.Core.BoundedContexts.Headquarters.Assignments;
 using WB.Core.BoundedContexts.Headquarters.Commands;
 using WB.Core.BoundedContexts.Headquarters.Invitations;
-using WB.Core.BoundedContexts.Headquarters.QuartzIntegration;
 using WB.Core.BoundedContexts.Headquarters.Questionnaires.Jobs;
 using WB.Core.BoundedContexts.Headquarters.Services;
 using WB.Core.BoundedContexts.Headquarters.Services.DeleteQuestionnaireTemplate;
@@ -45,7 +44,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Implementation.Services.DeleteQue
         private readonly IPlainKeyValueStorage<QuestionnaireLookupTable> lookupTablesStorage;
         private readonly IReusableCategoriesStorage reusableCategoriesStorage;
         private readonly IQuestionnaireStorage questionnaireStorage;
-        private readonly IScheduledTask<DeleteQuestionnaireJob, DeleteQuestionnaireRequest> deleteQuestionnaireTask;
+        private readonly DeleteQuestionnaireJobScheduler deleteQuestionnaireTask;
 
         private readonly IPlainKeyValueStorage<QuestionnaireBackup> questionnaireBackupStorage;
 
@@ -58,7 +57,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Implementation.Services.DeleteQue
             IPlainStorageAccessor<QuestionnaireBrowseItem> questionnaireBrowseItemReader,
             IPlainKeyValueStorage<QuestionnaireLookupTable> lookupTablesStorage,
             IQuestionnaireStorage questionnaireStorage,
-            IScheduledTask<DeleteQuestionnaireJob, DeleteQuestionnaireRequest> deleteQuestionnaireTask,
+            DeleteQuestionnaireJobScheduler deleteQuestionnaireTask,
             IInvitationsDeletionService invitationsDeletionService,
             IAggregateRootCache aggregateRootCache,
             IAssignmentsToDeleteFactory assignmentsToDeleteFactory,
@@ -81,7 +80,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Implementation.Services.DeleteQue
             this.questionnaireBackupStorage = questionnaireBackupStorage;
         }
 
-        public async Task DisableQuestionnaire(Guid questionnaireId, long questionnaireVersion, Guid userId)
+        public async Task DisableQuestionnaire(Guid questionnaireId, long questionnaireVersion, Guid? userId)
         {
             this.logger.LogWarning("Questionnaire {questionnaireId}${questionnaireVersion} deletion was triggered by {userId} user", questionnaireId, questionnaireVersion, userId);
             var questionnaireIdentity = new QuestionnaireIdentity(questionnaireId, questionnaireVersion);
@@ -97,12 +96,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Implementation.Services.DeleteQue
                         userId));
                 }
 
-                await this.deleteQuestionnaireTask.Schedule(new DeleteQuestionnaireRequest
-                {
-                    QuestionnaireId = questionnaireId,
-                    UserId = userId,
-                    Version = questionnaireVersion
-                });
+                await this.deleteQuestionnaireTask.ScheduleRunAsync(0);
             }
         }
 

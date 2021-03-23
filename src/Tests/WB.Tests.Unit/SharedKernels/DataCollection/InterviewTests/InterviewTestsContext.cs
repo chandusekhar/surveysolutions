@@ -29,13 +29,13 @@ namespace WB.Tests.Unit.SharedKernels.DataCollection.InterviewTests
         protected static Interview CreateInterview(Guid? interviewId = null, Guid? userId = null, Guid? questionnaireId = null,
             List<InterviewAnswer> answersToFeaturedQuestions = null, DateTime? answersTime = null, Guid? supervisorId = null,
             IQuestionnaireStorage questionnaireRepository = null, 
-            IInterviewExpressionStorageProvider expressionProcessorStorageProvider = null)
+            IInterviewExpressionStatePrototypeProvider expressionProcessorStatePrototypeProvider = null)
         {
             var textFactory = Create.Service.SubstitutionTextFactory();
 
             var interview = Create.AggregateRoot.Interview(
                 questionnaireRepository: questionnaireRepository,
-                expressionProcessorStorageProvider: expressionProcessorStorageProvider,
+                expressionProcessorStatePrototypeProvider: expressionProcessorStatePrototypeProvider,
                 textFactory: textFactory);
 
             interview.CreateInterview(Create.Command.CreateInterview(interview.EventSourceId, userId ?? new Guid("F000F000F000F000F000F000F000F000"), 

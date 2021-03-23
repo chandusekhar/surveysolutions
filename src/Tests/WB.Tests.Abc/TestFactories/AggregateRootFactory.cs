@@ -6,11 +6,14 @@ using Ncqrs;
 using WB.Core.BoundedContexts.Designer.Implementation.Services;
 using WB.Core.BoundedContexts.Headquarters.Implementation.Aggregates;
 using WB.Core.BoundedContexts.Headquarters.Implementation.Services;
+using WB.Core.BoundedContexts.Headquarters.Services;
 using WB.Core.BoundedContexts.Headquarters.Views.Questionnaire;
+using WB.Core.BoundedContexts.Headquarters.Views.User;
 using WB.Core.GenericSubdomains.Portable.ServiceLocation;
 using WB.Core.Infrastructure.FileSystem;
 using WB.Core.Infrastructure.Implementation;
 using WB.Core.Infrastructure.PlainStorage;
+using WB.Core.SharedKernels.DataCollection;
 using WB.Core.SharedKernels.DataCollection.ExpressionStorage;
 using WB.Core.SharedKernels.DataCollection.Implementation.Accessors;
 using WB.Core.SharedKernels.DataCollection.Implementation.Aggregates;
@@ -19,6 +22,7 @@ using WB.Core.SharedKernels.DataCollection.Implementation.Entities;
 using WB.Core.SharedKernels.DataCollection.Repositories;
 using WB.Core.SharedKernels.DataCollection.Services;
 using WB.Core.SharedKernels.DataCollection.ValueObjects.Interview;
+using WB.Core.SharedKernels.Enumerator.Views;
 using WB.Infrastructure.Native.Questionnaire;
 
 namespace WB.Tests.Abc.TestFactories
@@ -27,7 +31,7 @@ namespace WB.Tests.Abc.TestFactories
     {
         public Interview Interview(Guid? interviewId = null,
             IQuestionnaireStorage questionnaireRepository = null,
-            IInterviewExpressionStorageProvider expressionProcessorStorageProvider = null,
+            IInterviewExpressionStatePrototypeProvider expressionProcessorStatePrototypeProvider = null,
             QuestionnaireIdentity questionnaireId = null,
             ISubstitutionTextFactory textFactory = null,
             IQuestionOptionsRepository questionOptionsRepository = null)
@@ -44,7 +48,10 @@ namespace WB.Tests.Abc.TestFactories
             var serviceLocator = new Mock<IServiceLocator>();
             serviceLocator.Setup(x => x.GetInstance<IQuestionnaireStorage>())
                 .Returns(questionnaireRepository ?? questionnaireDefaultRepository);
-            
+
+            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStatePrototypeProvider>())
+                .Returns( expressionProcessorStatePrototypeProvider ?? CreateDefaultInterviewExpressionStateProvider(null));
+
             serviceLocator.Setup(x => x.GetInstance<IQuestionOptionsRepository>())
                 .Returns(Mock.Of<IQuestionOptionsRepository>);
 
@@ -133,7 +140,10 @@ namespace WB.Tests.Abc.TestFactories
             var serviceLocator = new Mock<IServiceLocator>();
             serviceLocator.Setup(x => x.GetInstance<IQuestionnaireStorage>())
                 .Returns(questionnaireRepository ?? Mock.Of<IQuestionnaireStorage>());
-            
+
+            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStatePrototypeProvider>())
+                .Returns(CreateDefaultInterviewExpressionStateProvider(setupLevel));
+
             serviceLocator.Setup(x => x.GetInstance<IQuestionOptionsRepository>()).Returns(questionOptionsRepository);
 
             var statefulInterview = new StatefulInterview(
@@ -167,7 +177,10 @@ namespace WB.Tests.Abc.TestFactories
             var serviceLocator = new Mock<IServiceLocator>();
             serviceLocator.Setup(x => x.GetInstance<IQuestionnaireStorage>())
                 .Returns(questionnaireRepository ?? Mock.Of<IQuestionnaireStorage>());
-            
+
+            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStatePrototypeProvider>())
+                .Returns(CreateDefaultInterviewExpressionStateProvider(setupLevel));
+
             serviceLocator.Setup(x => x.GetInstance<IQuestionOptionsRepository>())
                 .Returns(questionOptionsRepository ?? Mock.Of<IQuestionOptionsRepository>());
 
@@ -186,6 +199,23 @@ namespace WB.Tests.Abc.TestFactories
             }
 
             return statefulInterview;
+        }
+
+        private static IInterviewExpressionStatePrototypeProvider CreateDefaultInterviewExpressionStateProvider(Action<Mock<IInterviewLevel>> setupLevel = null)
+        {
+            //Stub<IInterviewExpressionStatePrototypeProvider>.WithNotEmptyValues,
+            var expressionStorage = new Mock<IInterviewExpressionStorage>();
+            var levelMock = new Mock<IInterviewLevel>();
+            setupLevel?.Invoke(levelMock);
+            expressionStorage.Setup(x => x.GetLevel(It.IsAny<Identity>())).Returns(levelMock.Object);
+
+            var expressionState = Stub<ILatestInterviewExpressionState>.WithNotEmptyValues;
+
+            var defaultExpressionStatePrototypeProvider = Mock.Of<IInterviewExpressionStatePrototypeProvider>(_
+                => _.GetExpressionStorage(It.IsAny<QuestionnaireIdentity>()) == expressionStorage.Object
+                && _.GetExpressionState(It.IsAny<Guid>(), It.IsAny<long>()) == expressionState);
+
+            return defaultExpressionStatePrototypeProvider;
         }
 
         public AssignmentAggregateRoot AssignmentAggregateRoot()

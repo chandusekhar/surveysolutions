@@ -25,16 +25,16 @@ namespace WB.Tests.Unit.Applications.Headquarters.PublicApiTests.AssignmentsTest
         [Test]
         public async Task should_return_404_for_non_existing_assignment()
         {
-            var result = await this.controller.Assign(101, new AssignmentAssignRequest() {Responsible = "any"});
+            var result = await this.controller.Assign(101, null);
             Assert.That(result.Result, Is.InstanceOf<NotFoundResult>());
         }
         
         [Test]
-        public async Task should_return_400_for_non_existing_responsibleUser()
+        public async Task should_return_404_for_non_existing_responsibleUser()
         {
             this.SetupAssignment(new Assignment());
             var result = await this.controller.Assign(101, null);
-            Assert.That(result.Result, Has.Property("StatusCode").EqualTo(StatusCodes.Status400BadRequest));
+            Assert.That(result.Result, Has.Property("StatusCode").EqualTo(StatusCodes.Status404NotFound));
         }
 
         [TestCase(UserRoles.Administrator)]

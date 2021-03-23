@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Main.Core.Entities.SubEntities;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -44,7 +43,6 @@ namespace WB.UI.Headquarters.Controllers.Api
         private readonly IUserImportService userImportService;
         private readonly IMoveUserToAnotherTeamService moveUserToAnotherTeamService;
         private readonly IUserArchiveService userArchiveService;
-        private readonly IMediator mediator;
         private readonly ILogger<UsersApiController> logger;
 
         public UsersApiController(
@@ -58,7 +56,6 @@ namespace WB.UI.Headquarters.Controllers.Api
             IUserImportService userImportService, 
             IMoveUserToAnotherTeamService moveUserToAnotherTeamService,
             IUserArchiveService userArchiveService,
-            IMediator mediator,
             ILogger<UsersApiController> logger)
         {
             this.authorizedUser = authorizedUser;
@@ -71,7 +68,6 @@ namespace WB.UI.Headquarters.Controllers.Api
             this.userImportService = userImportService;
             this.moveUserToAnotherTeamService = moveUserToAnotherTeamService;
             this.userArchiveService = userArchiveService;
-            this.mediator = mediator;
             this.logger = logger;
         }
 
@@ -304,13 +300,11 @@ namespace WB.UI.Headquarters.Controllers.Api
 
             try
             {
-                var openReadStream = request.File.OpenReadStream();
+                var importUserErrors = this.userImportService.VerifyAndSaveIfNoErrors(request.File.OpenReadStream(), request.File.FileName)
+                    .Take(8).Select(ToImportError).ToArray();
 
-                var importUserErrors = (await this.mediator.Send(new UserImportRequest
-                {
-                    FileStream = openReadStream,
-                    Filename = request.File.FileName
-                })).Select(ToImportError).ToArray();
+                if (!importUserErrors.Any())
+                    await this.userImportService.ScheduleRunUserImportAsync();
 
                 return this.Ok(importUserErrors);
             }

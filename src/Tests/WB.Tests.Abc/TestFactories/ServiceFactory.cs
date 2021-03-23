@@ -361,14 +361,17 @@ namespace WB.Tests.Abc.TestFactories
         public VariableToUIStringService VariableToUIStringService()
             => new VariableToUIStringService();
 
-        public IInterviewExpressionStorageProvider ExpressionStatePrototypeProvider()
+        public IInterviewExpressionStatePrototypeProvider ExpressionStatePrototypeProvider(
+            ILatestInterviewExpressionState expressionState = null)
         {
-            var expressionStatePrototypeProvider = new Mock<IInterviewExpressionStorageProvider>();
-            
+            var expressionStatePrototypeProvider = new Mock<IInterviewExpressionStatePrototypeProvider>();
+            ILatestInterviewExpressionState latestInterviewExpressionState =
+                expressionState ?? new InterviewExpressionStateStub();
+            expressionStatePrototypeProvider.SetReturnsDefault(latestInterviewExpressionState);
+
             return expressionStatePrototypeProvider.Object;
         }
 
-        
         public ISubstitutionTextFactory SubstitutionTextFactory()
         {
             return new SubstitutionTextFactory(Create.Service.SubstitutionService(),
@@ -645,9 +648,16 @@ namespace WB.Tests.Abc.TestFactories
             IUserImportVerifier userImportVerifier = null,
             IAuthorizedUser authorizedUser = null,
             IUnitOfWork sessionProvider = null,
+            UsersImportTask usersImportTask = null,
             PasswordOptions passwordOptions = null,
             IWorkspaceContextAccessor workspaceContextAccessor = null)
         {
+            var scheduler = new Mock<IScheduler>();
+            scheduler.Setup(x => x.GetCurrentlyExecutingJobs(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Array.Empty<IJobExecutionContext>());
+
+            usersImportTask ??= new UsersImportTask(scheduler.Object);
+            
             PasswordOptions defaultPasswordOptions = passwordOptions ?? new PasswordOptions
             {
                 RequireDigit = true,
@@ -669,6 +679,7 @@ namespace WB.Tests.Abc.TestFactories
                     Mock.Of<IOptions<IdentityOptions>>(x => x.Value == new IdentityOptions {Password = defaultPasswordOptions} )),
                 authorizedUser ?? Stub<IAuthorizedUser>.WithNotEmptyValues,
                 sessionProvider ?? Stub<IUnitOfWork>.WithNotEmptyValues,
+                usersImportTask ?? Stub<UsersImportTask>.WithNotEmptyValues, 
                 workspaceContextAccessor ?? Create.Service.WorkspaceContextAccessor());
         }
 
@@ -811,6 +822,7 @@ namespace WB.Tests.Abc.TestFactories
             IUnitOfWork sessionProvider = null,
             IPlainStorageAccessor<AssignmentsImportProcess> importAssignmentsProcessRepository = null,
             IPlainStorageAccessor<AssignmentToImport> importAssignmentsRepository = null,
+            IInterviewCreatorFromAssignment interviewCreatorFromAssignment = null,
             IQueryableReadSideRepositoryReader<Assignment, Guid> assignmentsStorage = null,
             IAssignmentsImportFileConverter assignmentsImportFileConverter = null,
             IInvitationService invitationService = null,
@@ -820,14 +832,15 @@ namespace WB.Tests.Abc.TestFactories
                 x.Query<AssignmentsImportProcess>() == GetNhQueryable<AssignmentsImportProcess>() &&
                 x.Query<AssignmentToImport>() == GetNhQueryable<AssignmentToImport>());
 
-            sessionProvider ??= Mock.Of<IUnitOfWork>(x => x.Session == session);
-            userViewFactory ??= Mock.Of<IUserViewFactory>();
+            sessionProvider = sessionProvider ?? Mock.Of<IUnitOfWork>(x => x.Session == session);
+            userViewFactory = userViewFactory ?? Mock.Of<IUserViewFactory>();
 
             return new AssignmentsImportService(verifier ?? ImportDataVerifier(),
                 authorizedUser ?? Mock.Of<IAuthorizedUser>(),
                 sessionProvider,
                 importAssignmentsProcessRepository ?? Mock.Of<IPlainStorageAccessor<AssignmentsImportProcess>>(),
                 importAssignmentsRepository ?? Mock.Of<IPlainStorageAccessor<AssignmentToImport>>(),
+                interviewCreatorFromAssignment ?? Mock.Of<IInterviewCreatorFromAssignment>(),
                 assignmentsImportFileConverter ?? AssignmentsImportFileConverter(userViewFactory: userViewFactory),
                 assignmentFactory ?? Create.Service.AssignmentFactory(),
                 invitationService ?? Mock.Of<IInvitationService>(),

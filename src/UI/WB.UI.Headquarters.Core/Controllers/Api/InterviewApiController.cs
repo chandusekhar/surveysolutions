@@ -172,9 +172,7 @@ namespace WB.UI.Headquarters.Controllers.Api
                 LastStatus = interviewSummaryView.Status.ToLocalizeString(),
                 LastUpdatedDate = AnswerUtils.AnswerToString(interviewSummaryView.UpdateDate),
                 InterviewId = interviewSummaryView.InterviewId,
-                IdentifyingData = interviewSummaryView.IdentifyEntitiesValues
-                    .Where(d=> d.Entity.EntityType == EntityType.Question)
-                    .Select(d =>
+                IdentifyingData = interviewSummaryView.IdentifyEntitiesValues.Select(d =>
                         new AnswerView()
                         {
                             Title = questionnaire.GetQuestionTitle(d.Entity.EntityId).RemoveHtmlTags(),

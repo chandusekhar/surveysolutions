@@ -1,11 +1,7 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using System.ComponentModel;
-using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Swashbuckle.AspNetCore.Annotations;
 using WB.Core.BoundedContexts.Headquarters.ValueObjects;
 using WB.Core.BoundedContexts.Headquarters.Views;
@@ -37,13 +33,10 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
         [Route("globalnotice")]
         [HttpPut]
         [SwaggerResponse(204, "Global notice set")]
-        [SwaggerResponse(400, "Message text missing", type: typeof(ValidationProblemDetails))]
-        public ActionResult PutGlobalNotice([FromBody, BindRequired]SetGlobalNoticeApiModel request)
+        [SwaggerResponse(400, "Message text missing")]
+        public ActionResult PutGlobalNotice([FromBody]SetGlobalNoticeApiModel request)
         {
-            if (!ModelState.IsValid)
-                return ValidationProblem();
-            
-            if (string.IsNullOrEmpty(request.Message))
+            if (string.IsNullOrEmpty(request?.Message))
                 return BadRequest();
 
             this.appSettingsStorage.Store(new GlobalNotice { Message = request.Message }, AppSetting.GlobalNoticeKey);

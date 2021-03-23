@@ -97,6 +97,7 @@ namespace WB.Tests.Web.TestFactories
             IUserRepository userManager = null,
             IQuestionnaireStorage questionnaireStorage = null,
             ISystemLog auditLog = null,
+            IInterviewCreatorFromAssignment interviewCreatorFromAssignment = null,
             IPreloadedDataVerifier verifier = null,
             ICommandTransformator commandTransformator = null,
             ICommandService commandService = null,

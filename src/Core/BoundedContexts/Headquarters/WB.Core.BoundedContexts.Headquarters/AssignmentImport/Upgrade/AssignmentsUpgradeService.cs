@@ -1,10 +1,9 @@
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using WB.Core.BoundedContexts.Headquarters.QuartzIntegration;
 using WB.Core.BoundedContexts.Headquarters.Services;
 using WB.Core.BoundedContexts.Headquarters.Users;
 using WB.Core.SharedKernels.DataCollection.Implementation.Entities;
@@ -19,37 +18,39 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport.Upgrade
         private readonly IUserRepository users;
         private readonly IMemoryCache memoryCache;
         private readonly ILogger<AssignmentsUpgradeService> logger;
-        private readonly IScheduledTask<UpgradeAssignmentJob, AssignmentsUpgradeProcess> scheduler;
 
         public AssignmentsUpgradeService(ISystemLog auditLog, 
             IQuestionnaireStorage questionnaireStorage,
             IUserRepository users,
             ILogger<AssignmentsUpgradeService> logger,
-            IMemoryCache memoryCache,
-            IScheduledTask<UpgradeAssignmentJob, AssignmentsUpgradeProcess> scheduler)
+            IMemoryCache memoryCache)
         {
             this.auditLog = auditLog;
             this.questionnaireStorage = questionnaireStorage;
             this.users = users;
             this.memoryCache = memoryCache;
             this.logger = logger;
-            this.scheduler = scheduler;
         }
 
-        public async Task EnqueueUpgrade(Guid processId,
+        public void EnqueueUpgrade(Guid processId,
             Guid userId,
             QuestionnaireIdentity migrateFrom,
-            QuestionnaireIdentity migrateTo, CancellationToken token = default)
+            QuestionnaireIdentity migrateTo)
         {
-            var questionnaire = this.questionnaireStorage.GetQuestionnaire(migrateTo, null)
-                ?? throw new ArgumentException($@"Cannot find questionnaire {migrateTo} to migrate to", nameof(migrateTo));
+            var questionnaire = this.questionnaireStorage.GetQuestionnaire(migrateTo, null);
 
-            var user = await this.users.FindByIdAsync(userId, token);
+            var user = this.users.FindById(userId);
             this.auditLog.AssignmentsUpgradeStarted(questionnaire.Title, migrateFrom.Version, migrateTo.Version, userId, user.UserName);
 
-            var upgrade = new AssignmentsUpgradeProcess(processId, userId, migrateFrom, migrateTo);
-            await scheduler.Schedule(upgrade);
-            
+            var upgradeQueue = memoryCache.GetOrCreate(GetQueueCacheKey(),q=>
+            {
+                ConcurrentQueue<QueuedUpgrade> upgradeQueue = new ConcurrentQueue<QueuedUpgrade>();
+                q.Priority = CacheItemPriority.NeverRemove;
+                return upgradeQueue;
+            } );
+
+            upgradeQueue.Enqueue(new QueuedUpgrade(processId, userId, migrateFrom, migrateTo));
+
             memoryCache.Set(GetStatusCacheKey(processId),  
                 new AssignmentUpgradeProgressDetails(migrateFrom, migrateTo,
                     0, 0, 
@@ -66,6 +67,16 @@ namespace WB.Core.BoundedContexts.Headquarters.AssignmentImport.Upgrade
                 progressDetails,
                 new MemoryCacheEntryOptions()
                     .SetSlidingExpiration(TimeSpan.FromMinutes(60)));
+        }
+
+        public QueuedUpgrade DequeueUpgrade()
+        {
+            if (!memoryCache.TryGetValue(GetQueueCacheKey(),
+                out ConcurrentQueue<QueuedUpgrade> upgradeQueue)) return null;
+
+            if (upgradeQueue.IsEmpty) return null;
+
+            return upgradeQueue.TryDequeue(out QueuedUpgrade request) ? request : null;
         }
 
         public AssignmentUpgradeProgressDetails Status(Guid processId)

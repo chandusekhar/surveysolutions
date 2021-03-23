@@ -8,7 +8,7 @@
         <form onsubmit="return false;"
             v-if="!loading">
             <div v-if="canDelete">
-                <p data-suso="delete-explanation"
+                <p
                     v-html="$t('Workspaces.DeleteExplanation', { name: workspaceTitle } )">
                 </p>
                 <Checkbox v-for="c in consentsList"
@@ -18,8 +18,7 @@
                     :name="c.name"
                     v-model="consent[c.name]" />
             </div>
-            <p v-if="!canDelete"
-                data-suso="cannot-delete-explanation">{{ $t("Workspaces.CantDeleteExplanation") }}</p>
+            <p v-if="!canDelete">{{ $t("Workspaces.CantDeleteExplanation") }}</p>
         </form>
         <div class="modal-footer">
             <button

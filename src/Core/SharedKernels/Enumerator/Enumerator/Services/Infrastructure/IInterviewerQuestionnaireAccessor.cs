@@ -19,6 +19,8 @@ namespace WB.Core.SharedKernels.Enumerator.Services.Infrastructure
 
         QuestionnaireDocument GetQuestionnaire(QuestionnaireIdentity questionnaireIdentity);
 
+        List<QuestionnaireIdentity> GetCensusQuestionnaireIdentities();
+
         bool IsQuestionnaireExists(QuestionnaireIdentity questionnaireIdentity);
 
         bool IsQuestionnaireAssemblyExists(QuestionnaireIdentity questionnaireIdentity);

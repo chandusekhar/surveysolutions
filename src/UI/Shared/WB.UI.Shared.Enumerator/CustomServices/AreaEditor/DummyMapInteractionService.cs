@@ -16,10 +16,7 @@ namespace WB.UI.Shared.Enumerator.CustomServices.AreaEditor
         public Task OpenMapDashboardAsync()
         {
             return Task.CompletedTask;
-        }
-
-        public void Init(string key)
-        {
+            //throw new NotImplementedException();
         }
 
         public bool DoesSupportMaps => false;

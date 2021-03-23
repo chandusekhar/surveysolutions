@@ -58,31 +58,23 @@ namespace WB.UI.WebTester.Controllers
             {
                 if (!string.IsNullOrEmpty(scenarioId))
                 {
-                    var result = await this.interviewFactory.ImportQuestionnaireAndCreateInterview(id, int.Parse(scenarioId));
-                    if (result == CreationResult.DataPartialRestored)
-                    {
-                        TempData["Message"] = Common.ReloadPartialInterviewErrorMessage;
-                    }
-                    else if (result != CreationResult.DataRestored)
+                    var result = await this.interviewFactory.CreateInterview(id, int.Parse(scenarioId));
+                    if (result != CreationResult.DataRestored)
                     {
                         TempData["Message"] = Common.ReloadInterviewErrorMessage;
                     }
                 }
                 else if (!string.IsNullOrEmpty(originalInterviewId))
                 {
-                    var result = await this.interviewFactory.ImportQuestionnaireAndCreateInterview(id, Guid.Parse(originalInterviewId));
-                    if (result == CreationResult.DataPartialRestored)
-                    {
-                        TempData["Message"] = Common.ReloadPartialInterviewErrorMessage;
-                    }
-                    else if (result != CreationResult.DataRestored)
+                    var result = await this.interviewFactory.CreateInterview(id, Guid.Parse(originalInterviewId));
+                    if (result != CreationResult.DataRestored)
                     {
                         TempData["Message"] = Common.ReloadInterviewErrorMessage;
                     }
                 }
                 else
                 {
-                    await this.interviewFactory.ImportQuestionnaireAndCreateInterview(id);
+                    await this.interviewFactory.CreateInterview(id);
                 }
             }
             catch (ApiException e) when (e.StatusCode == HttpStatusCode.PreconditionFailed)

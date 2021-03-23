@@ -110,7 +110,7 @@ namespace WB.Core.BoundedContexts.Designer.Verifier
 
             builder.BlockParsers.AddIfNotAlready<ParagraphBlockParser>();
             builder.InlineParsers.AddIfNotAlready<LinkInlineParser>();
-            builder.InlineParsers.AddIfNotAlready<AutolinkInlineParser>();
+            builder.InlineParsers.AddIfNotAlready<AutolineInlineParser>();
 
             var pipeline = builder.Build();
 

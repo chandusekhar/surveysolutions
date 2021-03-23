@@ -8,6 +8,7 @@ using Main.Core.Documents;
 using Main.Core.Entities.SubEntities;
 using Main.Core.Events;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Ncqrs.Eventing;
 using Ncqrs.Eventing.ServiceModel.Bus;
@@ -29,6 +30,7 @@ using WB.Core.BoundedContexts.Headquarters.Views.Interview;
 using WB.Core.BoundedContexts.Headquarters.Workspaces;
 using WB.Core.GenericSubdomains.Portable;
 using WB.Core.GenericSubdomains.Portable.ServiceLocation;
+using WB.Core.GenericSubdomains.Portable.Services;
 using WB.Core.Infrastructure.Aggregates;
 using WB.Core.Infrastructure.CommandBus;
 using WB.Core.Infrastructure.CommandBus.Implementation;
@@ -46,6 +48,7 @@ using WB.Core.SharedKernels.Enumerator.Services.Infrastructure;
 using WB.Core.SharedKernels.Enumerator.ViewModels.InterviewDetails;
 using WB.Core.SharedKernels.SurveySolutions;
 using WB.Core.SharedKernels.SurveySolutions.Documents;
+using WB.Infrastructure.Native.Files.Implementation.FileSystem;
 using WB.Infrastructure.Native.Storage.Postgre;
 using WB.Infrastructure.Native.Storage.Postgre.Implementation;
 using IEvent = WB.Core.Infrastructure.EventBus.IEvent;
@@ -53,6 +56,7 @@ using WB.Infrastructure.Native.Storage;
 using WB.Infrastructure.Native.Storage.Postgre.NhExtensions;
 using WB.Infrastructure.Native.Workspaces;
 using WB.Tests.Abc;
+using WB.UI.Designer.Code;
 using WB.UI.Headquarters;
 using Configuration = NHibernate.Cfg.Configuration;
 using Environment = System.Environment;
@@ -61,11 +65,25 @@ namespace WB.Tests.Integration
 {
     internal static class IntegrationCreate
     {
+        public static CodeGenerator CodeGenerator(
+            IMacrosSubstitutionService macrosSubstitutionService = null,
+            IExpressionProcessor expressionProcessor = null,
+            ILookupTableService lookupTableService = null)
+        {
+            return new CodeGenerator(
+                macrosSubstitutionService ?? DefaultMacrosSubstitutionService(),
+                expressionProcessor ?? ServiceLocator.Current.GetInstance<IExpressionProcessor>(),
+                lookupTableService ?? ServiceLocator.Current.GetInstance<ILookupTableService>(),
+                new FileSystemIOAccessor(), 
+                GetCompilerSettingsStub());
+        }
+
         public static string CompileAssembly(QuestionnaireDocument questionnaireDocument)
         {
             var expressionProcessorGenerator =
                 new QuestionnaireExpressionProcessorGenerator(
                     new RoslynCompiler(),
+                    CodeGenerator(),
                     CodeGeneratorV2(),
                     new DynamicCompilerSettingsProvider());
 
@@ -105,6 +123,9 @@ namespace WB.Tests.Integration
                 macrosSubstitutionService ?? DefaultMacrosSubstitutionService()));
         }
 
+        private static IOptions<CompilerSettings> GetCompilerSettingsStub()
+            => Mock.Of<IOptions<CompilerSettings>>(x => x.Value == new CompilerSettings());
+
         public static IMacrosSubstitutionService DefaultMacrosSubstitutionService()
         {
             var macrosSubstitutionServiceMock = new Mock<IMacrosSubstitutionService>();
@@ -121,7 +142,7 @@ namespace WB.Tests.Integration
         public static Interview Interview(
             Guid? questionnaireId = null,
             IQuestionnaireStorage questionnaireRepository = null, 
-            IInterviewExpressionStorageProvider expressionProcessorStorageProvider = null,
+            IInterviewExpressionStatePrototypeProvider expressionProcessorStatePrototypeProvider = null,
             IQuestionOptionsRepository questionOptionsRepository = null)
         {
 
@@ -131,8 +152,8 @@ namespace WB.Tests.Integration
             serviceLocator.Setup(x => x.GetInstance<IQuestionnaireStorage>())
                 .Returns(qRepository);
 
-            var expressionsProvider = expressionProcessorStorageProvider ?? Mock.Of<IInterviewExpressionStorageProvider>();
-            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStorageProvider>())
+            var expressionsProvider = expressionProcessorStatePrototypeProvider ?? Mock.Of<IInterviewExpressionStatePrototypeProvider>();
+            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStatePrototypeProvider>())
                 .Returns(expressionsProvider);
 
             var optionsRepository = questionOptionsRepository ?? Mock.Of<IQuestionOptionsRepository>();
@@ -161,7 +182,7 @@ namespace WB.Tests.Integration
             PreloadedDataDto preloadedData,
             Guid? questionnaireId = null,
             IQuestionnaireStorage questionnaireRepository = null, 
-            IInterviewExpressionStorageProvider expressionProcessorStorageProvider = null)
+            IInterviewExpressionStatePrototypeProvider expressionProcessorStatePrototypeProvider = null)
         {
             var serviceLocator = new Mock<IServiceLocator>();
 
@@ -169,8 +190,8 @@ namespace WB.Tests.Integration
             serviceLocator.Setup(x => x.GetInstance<IQuestionnaireStorage>())
                 .Returns(qRepository);
 
-            var expressionsProvider = expressionProcessorStorageProvider ?? Mock.Of<IInterviewExpressionStorageProvider>();
-            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStorageProvider>())
+            var expressionsProvider = expressionProcessorStatePrototypeProvider ?? Mock.Of<IInterviewExpressionStatePrototypeProvider>();
+            serviceLocator.Setup(x => x.GetInstance<IInterviewExpressionStatePrototypeProvider>())
                 .Returns(expressionsProvider);
 
             var optionsRepository = Mock.Of<IQuestionOptionsRepository>();

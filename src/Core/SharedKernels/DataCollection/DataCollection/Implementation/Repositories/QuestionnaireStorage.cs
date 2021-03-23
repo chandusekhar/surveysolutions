@@ -22,17 +22,17 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Repositories
         private readonly IQuestionnaireTranslator translator;
         private readonly IQuestionOptionsRepository questionOptionsRepository;
         private readonly ISubstitutionService substitutionService;
-        private readonly IInterviewExpressionStorageProvider expressionStorageProvider;
+        private readonly IInterviewExpressionStatePrototypeProvider expressionStatePrototypeProvider;
         private readonly IMemoryCache memoryCache;
 
         private static readonly TimeSpan QuestionnaireDocumentExpiration = TimeSpan.FromMinutes(5);
 
-        public QuestionnaireStorage(IPlainKeyValueStorage<QuestionnaireDocument> repository,
-            ITranslationStorage translationStorage,
+        public QuestionnaireStorage(IPlainKeyValueStorage<QuestionnaireDocument> repository, 
+            ITranslationStorage translationStorage, 
             IQuestionnaireTranslator translator,
             IQuestionOptionsRepository questionOptionsRepository,
             ISubstitutionService substitutionService,
-            IInterviewExpressionStorageProvider expressionStorageProvider,
+            IInterviewExpressionStatePrototypeProvider expressionStatePrototypeProvider,
             IMemoryCache memoryCache)
         {
             this.repository = repository;
@@ -40,7 +40,7 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Repositories
             this.translator = translator;
             this.questionOptionsRepository = questionOptionsRepository;
             this.substitutionService = substitutionService;
-            this.expressionStorageProvider = expressionStorageProvider ?? throw new ArgumentNullException(nameof(expressionStorageProvider));
+            this.expressionStatePrototypeProvider = expressionStatePrototypeProvider ?? throw new ArgumentNullException(nameof(expressionStatePrototypeProvider));
             this.memoryCache = memoryCache;
         }
 
@@ -86,11 +86,16 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Repositories
                 questionnaireDocument = this.translator.Translate(questionnaireDocument, translation);
             }
 
-            var plainQuestionnaire = new PlainQuestionnaire(questionnaireDocument, identity.Version,
+            var plainQuestionnaire = new PlainQuestionnaire(questionnaireDocument, identity.Version, 
                 questionOptionsRepository, substitutionService, translationId);
 
             plainQuestionnaire.WarmUpPriorityCaches();
-            plainQuestionnaire.ExpressionStorageType = this.expressionStorageProvider.GetExpressionStorageType(identity);
+
+            var usingExpressionStorage = plainQuestionnaire.IsUsingExpressionStorage();
+            if (usingExpressionStorage)
+            {
+                plainQuestionnaire.ExpressionStorageType = this.expressionStatePrototypeProvider.GetExpressionStorageType(identity);
+            }
 
             return plainQuestionnaire;
         }
@@ -141,7 +146,7 @@ namespace WB.Core.SharedKernels.DataCollection.Implementation.Repositories
         public void DeleteQuestionnaireDocument(Guid id, long version)
         {
             var questionnaireIdentity = new QuestionnaireIdentity(id, version);
-
+            
             string repositoryId = GetRepositoryId(questionnaireIdentity);
             var document = this.repository.GetById(repositoryId);
 

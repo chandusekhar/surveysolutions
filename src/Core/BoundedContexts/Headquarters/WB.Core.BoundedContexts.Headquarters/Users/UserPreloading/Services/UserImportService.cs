@@ -12,6 +12,7 @@ using WB.Core.BoundedContexts.Headquarters.DataExport.Factories;
 using WB.Core.BoundedContexts.Headquarters.Resources;
 using WB.Core.BoundedContexts.Headquarters.Services;
 using WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Dto;
+using WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Tasks;
 using WB.Core.BoundedContexts.Headquarters.ValueObjects.Export;
 using WB.Core.BoundedContexts.Headquarters.Views.User;
 using WB.Core.Infrastructure.PlainStorage;
@@ -33,6 +34,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
         private readonly IUserImportVerifier userImportVerifier;
         private readonly IAuthorizedUser authorizedUser;
         private readonly IUnitOfWork sessionProvider;
+        private readonly UsersImportTask usersImportTask;
         private readonly IWorkspaceContextAccessor workspaceContextAccessor;
 
         private readonly Guid supervisorRoleId = UserRoles.Supervisor.ToUserId();
@@ -47,6 +49,7 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
             IUserImportVerifier userImportVerifier,
             IAuthorizedUser authorizedUser,
             IUnitOfWork sessionProvider,
+            UsersImportTask usersImportTask,
             IWorkspaceContextAccessor workspaceContextAccessor)
         {
             this.userPreloadingSettings = userPreloadingSettings;
@@ -57,11 +60,15 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
             this.userImportVerifier = userImportVerifier;
             this.authorizedUser = authorizedUser;
             this.sessionProvider = sessionProvider;
+            this.usersImportTask = usersImportTask;
             this.workspaceContextAccessor = workspaceContextAccessor;
         }
 
         public IEnumerable<UserImportVerificationError> VerifyAndSaveIfNoErrors(Stream data, string fileName)
         {
+            if (this.usersImportTask.IsJobRunning())
+                throw new PreloadingException(UserPreloadingServiceMessages.HasUsersToImport);
+
             var csvDelimiter = ExportFileSettings.DataFileSeparator.ToString();
 
             var requiredColumns = this.GetRequiredUserProperties();
@@ -77,19 +84,19 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
 
             var currentWorkspace = this.workspaceContextAccessor.CurrentWorkspace()
                                    ?? throw new MissingWorkspaceException("Cannot preload users outside of workspace");
-
+            
             var usersToImport = new List<UserToImport>();
-
+            
             var allInterviewersAndSupervisors = this.userStorage.Users
                 .Select(x => new UserToValidate
-                {
-                    UserId = x.Id,
-                    UserName = x.UserName,
-                    IsArchived = x.IsArchived,
-                    SupervisorId = x.Profile.SupervisorId,
-                    IsSupervisor = x.Roles.Any(role => role.Id == supervisorRoleId),
-                    IsInterviewer = x.Roles.Any(role => role.Id == interviewerRoleId),
-                    IsInCurrentWorkspace = x.Workspaces.Any(w => w.Workspace.Name == currentWorkspace.Name)
+            {
+                UserId = x.Id,
+                UserName = x.UserName,
+                IsArchived = x.IsArchived,
+                SupervisorId = x.Profile.SupervisorId,
+                IsSupervisor = x.Roles.Any(role => role.Id == supervisorRoleId),
+                IsInterviewer = x.Roles.Any(role => role.Id == interviewerRoleId),
+                IsInCurrentWorkspace = x.Workspaces.Any(w => w.Workspace.Name == currentWorkspace.Name)
                 }).ToArray();
 
             var validations = this.userImportVerifier.GetEachUserValidations(allInterviewersAndSupervisors);
@@ -148,7 +155,15 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
                 }
             }
 
-            if (!hasErrors) this.Save(fileName, usersToImport);
+            if (!hasErrors) this.Save(fileName, usersToImport); 
+        }
+
+        public async Task ScheduleRunUserImportAsync()
+        {
+            if (this.usersImportTask.IsJobRunning())
+                throw new PreloadingException(UserPreloadingServiceMessages.HasUsersToImport);
+
+            await usersImportTask.ScheduleRunAsync();
         }
 
         private string[] GetRequiredUserProperties() => this.GetUserProperties().Take(4).ToArray();
@@ -181,12 +196,11 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
 
         private void SaveUsers(IList<UserToImport> usersToImport)
         {
-            if (this.sessionProvider.Session.Connection is NpgsqlConnection npgsqlConnection)
-            {
+            var npgsqlConnection = this.sessionProvider.Session.Connection as NpgsqlConnection;
 
-                using var writer = npgsqlConnection.BeginBinaryImport(
-                    $"COPY  {UserToImportTableName} (login, email, fullname, password, phonenumber, role, supervisor) " +
-                    "FROM STDIN BINARY;");
+            using (var writer = npgsqlConnection.BeginBinaryImport($"COPY  {UserToImportTableName} (login, email, fullname, password, phonenumber, role, supervisor) " +
+                                                                   "FROM STDIN BINARY;"))
+            {
                 foreach (var userToImport in usersToImport.OrderBy(x => x.UserRole))
                 {
                     writer.StartRow();
@@ -235,17 +249,16 @@ namespace WB.Core.BoundedContexts.Headquarters.Users.UserPreloading.Services
             $"DELETE FROM {UserToImportTableName};" +
             $"DELETE FROM {UsersImportProcessTableName};");
 
-        public UserToImport GetUserToImport() => this.importUsersRepository
-            .Query(x => x.OrderBy(u => u.Id).FirstOrDefault());
+        public UserToImport GetUserToImport() => this.importUsersRepository.Query(x => x.FirstOrDefault());
 
-        public void RemoveImportedUser(UserToImport importedUser) => this.sessionProvider.Session.Connection.Execute(
-            $"DELETE FROM {UserToImportTableName} where id = @id", new { id = importedUser.Id});
+        public void RemoveImportedUser(UserToImport importedUser)
+            => this.importUsersRepository.Remove(new[] { importedUser });
 
         private static UserImportVerificationError ToVerificationError(PreloadedDataValidator validator,
             UserToImport userToImport, int userIndex)
             => new UserImportVerificationError
             {
-                CellValue = validator.ValueSelectorCompiled.Value(userToImport),
+                CellValue = validator.ValueSelector.Compile()(userToImport),
                 Code = validator.Code,
                 ColumnName = ((MemberExpression)validator.ValueSelector.Body).Member.Name,
                 RowNumber = userIndex + 1 /*header item*/

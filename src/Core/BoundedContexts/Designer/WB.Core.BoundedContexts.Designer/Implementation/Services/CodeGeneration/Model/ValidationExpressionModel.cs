@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using WB.Core.BoundedContexts.Designer.CodeGenerationV2;
 
 namespace WB.Core.BoundedContexts.Designer.Implementation.Services.CodeGeneration.Model
 {
@@ -13,7 +12,7 @@ namespace WB.Core.BoundedContexts.Designer.Implementation.Services.CodeGeneratio
         }
 
         public string ValidationExpression { get; }
-        public string ValidationMethodName => $"{CodeGeneratorV2.ValidationPrefix}{this.VariableName}__{this.Order.ToString(CultureInfo.InvariantCulture)}";
+        public string ValidationMethodName => $"{CodeGenerator.ValidationPrefix}{this.VariableName}__{this.Order.ToString(CultureInfo.InvariantCulture)}";
         public string VariableName { get; }
         public int Order { get; }
     }

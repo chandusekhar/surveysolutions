@@ -231,7 +231,6 @@
                             id="companyLogo"
                             ref="logoRef"
                             name="logo"
-                            @change="changedFile"
                             accept="image/gif, image/jpeg, image/png"/>
                         <span class="help-block"
                             v-if="this.$config.model.invalidImage">{{ this.$t('Settings.LogoNotUpdated') }}</span>
@@ -239,7 +238,6 @@
                 </div>
                 <div class="block-filter">
                     <button
-                        :disabled="files.length == 0"
                         type="submit"
                         class="btn btn-success">{{$t('Common.Save')}}</button>
                 </div>
@@ -297,7 +295,6 @@ export default {
             isPartialSynchronizationEnabled: false,
             isDeviceNotificationsEnabled: false,
             isEmailAllowed: false,
-            files: [],
         }
     },
     mounted() {
@@ -420,9 +417,6 @@ export default {
                     },
                 },
             })
-        },
-        changedFile(e) {
-            this.files = this.$refs.logoRef.files
         },
     },
 }

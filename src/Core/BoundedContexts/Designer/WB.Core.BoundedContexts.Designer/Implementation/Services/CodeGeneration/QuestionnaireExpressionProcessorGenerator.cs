@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Main.Core.Documents;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
@@ -11,15 +12,18 @@ namespace WB.Core.BoundedContexts.Designer.Implementation.Services.CodeGeneratio
     public class QuestionnaireExpressionProcessorGenerator : IExpressionProcessorGenerator
     {
         private readonly IDynamicCompiler codeCompiler;
+        private readonly ICodeGenerator codeGenerator;
         private readonly ICodeGeneratorV2 codeGeneratorV2;
         private readonly IDynamicCompilerSettingsProvider compilerSettingsProvider;
 
         public QuestionnaireExpressionProcessorGenerator(
             IDynamicCompiler codeCompiler, 
+            ICodeGenerator codeGenerator,
             ICodeGeneratorV2 codeGeneratorV2,
             IDynamicCompilerSettingsProvider compilerSettingsProvider)
         {
             this.codeCompiler =  codeCompiler;
+            this.codeGenerator = codeGenerator;
             this.compilerSettingsProvider = compilerSettingsProvider;
             this.codeGeneratorV2 = codeGeneratorV2;
         }
@@ -40,7 +44,9 @@ namespace WB.Core.BoundedContexts.Designer.Implementation.Services.CodeGeneratio
 
         public Dictionary<string, string> GenerateProcessorStateClasses(QuestionnaireDocument questionnaire, int targetVersion, bool inSingleFile = false)
         {
-            return this.codeGeneratorV2.Generate(questionnaire, targetVersion, inSingleFile);
+            return targetVersion >= 20 
+                ? this.codeGeneratorV2.Generate(questionnaire, targetVersion, inSingleFile) 
+                : this.codeGenerator.Generate(questionnaire, targetVersion);
         }
     }
 }

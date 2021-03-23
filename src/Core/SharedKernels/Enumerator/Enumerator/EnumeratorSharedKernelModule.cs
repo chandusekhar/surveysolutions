@@ -50,7 +50,8 @@ namespace WB.Core.SharedKernels.Enumerator
             registry.Bind<IOptionsRepository, OptionsRepository>();
             registry.Bind<IQuestionOptionsRepository, QuestionOptionsRepository>();
             registry.Bind<IInterviewTreeBuilder, InterviewTreeBuilder>();
-            registry.Bind<IInterviewExpressionStorageProvider, InterviewExpressionStorageProvider>();
+            registry.BindAsSingleton<IInterviewExpressionStateUpgrader, InterviewExpressionStateUpgrader>();
+            registry.Bind<IInterviewExpressionStatePrototypeProvider, InterviewExpressionStatePrototypeProvider>();
             registry.BindAsSingleton<IFriendlyErrorMessageService, FriendlyErrorMessageService>();
             registry.Bind<ICompositeCollectionInflationService, CompositeCollectionInflationService>();
             registry.BindAsSingleton<ILastCompletionComments, LastCompletionComments>();
