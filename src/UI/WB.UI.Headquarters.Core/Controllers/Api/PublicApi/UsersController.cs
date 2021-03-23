@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Main.Core.Entities.SubEntities;
@@ -53,7 +54,7 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
         [HttpGet]
         [Route("supervisors")]
         public UserApiView Supervisors(int limit = 10, int offset = 1)
-            => new UserApiView(this.usersFactory.GetUsersByRole(offset, limit, null, null, false, UserRoles.Supervisor));
+            => new UserApiView(this.usersFactory.GetUsersByRole(offset, limit, string.Empty, string.Empty, false, UserRoles.Supervisor));
 
         /// <summary>
         /// Gets list of interviewers in the specific supervisor team
@@ -64,7 +65,7 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
         [HttpGet]
         [Route("supervisors/{supervisorId:guid}/interviewers")]
         public UserApiView Interviewers(Guid supervisorId, int limit = 10, int offset = 1)
-            => new UserApiView(this.usersFactory.GetInterviewers(offset, limit, null, null, false, null, supervisorId));
+            => new UserApiView(this.usersFactory.GetInterviewers(offset, limit, string.Empty, string.Empty, false, null, supervisorId));
 
         /// <summary>
         /// Gets detailed info about single user
@@ -132,11 +133,13 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
         [HttpPatch]
         [Route("users/{id}/archive")]
         [ObservingNotAllowed]
+        [ProducesResponseType(400, Type = typeof(ValidationProblemDetails))]
         public async Task<ActionResult> Archive(string id)
         {
             if (!Guid.TryParse(id, out var userGuid))
             {
-                return this.BadRequest();
+                ModelState.AddModelError("id", "user id malformed");
+                return ValidationProblem();
             }
 
             var user = this.usersFactory.GetUser(new UserViewInputModel(userGuid));
@@ -157,6 +160,7 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
             {
                 await this.archiveService.ArchiveUsersAsync(new[] { userGuid });
             }
+
             return this.Ok();
         }
 
@@ -172,11 +176,13 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
         [HttpPatch]
         [Route("users/{id}/unarchive")]
         [ObservingNotAllowed]
+        [ProducesResponseType(400, Type = typeof(ValidationProblemDetails))]
         public async Task<ActionResult> UnArchive(string id)
         {
             if (!Guid.TryParse(id, out var userGuid))
             {
-                return this.BadRequest();
+                ModelState.AddModelError("id", "user id malformed");
+                return ValidationProblem();
             }
 
             var user = this.usersFactory.GetUser(new UserViewInputModel(userGuid));
@@ -233,8 +239,12 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
         [HttpPost]
         [Route("users")]
         [ObservingNotAllowed]
-        public async Task<ActionResult<UserCreationResult>> Register([FromBody]RegisterUserModel model)
+        [ProducesResponseType(400, Type = typeof(ValidationProblemDetails))]
+        public async Task<ActionResult<UserCreationResult>> Register([FromBody, BindRequired]RegisterUserModel model)
         {
+            if (!ModelState.IsValid)
+                return ValidationProblem();
+            
             if (!Enum.IsDefined(typeof(UserRoles), (UserRoles)model.Role))
             {
                 ModelState.AddModelError(nameof(model.Role), "Trying to create user with unknown role");
@@ -253,7 +263,7 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
                 if (createdUserRole == UserRoles.Interviewer && string.IsNullOrWhiteSpace(model.Supervisor))
                 {
                     ModelState.AddModelError(nameof(model.Supervisor), "Supervisor name is required for interviewer creation");
-                    return BadRequest(ModelState);
+                    return ValidationProblem();
                 }
 
                 var createdUser = new HqUser
@@ -301,13 +311,7 @@ namespace WB.UI.Headquarters.Controllers.Api.PublicApi
                 }
             }
 
-            foreach (var modelState in ModelState.Values) {
-                foreach (ModelError error in modelState.Errors) {
-                    result.Errors.Add(error.ErrorMessage);
-                }
-            }
-
-            return BadRequest(result);
+            return ValidationProblem();
         }
     }
 }
